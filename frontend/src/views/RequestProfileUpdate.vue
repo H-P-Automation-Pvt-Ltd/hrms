@@ -41,9 +41,9 @@
 							<FormField
 								v-model="form.gender"
 								fieldname="gender"
-								fieldtype="Select"
+								:fieldtype="getFieldMeta('gender').fieldtype"
 								:label="__('Gender')"
-								:options="getFieldOptions('gender')"
+								:options="getFieldMeta('gender').options"
 							/>
 							<FormField
 								v-model="form.date_of_birth"
@@ -78,17 +78,72 @@
 							<FormField
 								v-model="form.marital_status"
 								fieldname="marital_status"
-								fieldtype="Select"
+								:fieldtype="getFieldMeta('marital_status').fieldtype"
 								:label="__('Marital Status')"
-								:options="getFieldOptions('marital_status')"
+								:options="getFieldMeta('marital_status').options"
 							/>
 							<FormField
 								v-model="form.blood_group"
 								fieldname="blood_group"
-								fieldtype="Select"
+								:fieldtype="getFieldMeta('blood_group').fieldtype"
 								:label="__('Blood Group')"
-								:options="getFieldOptions('blood_group')"
+								:options="getFieldMeta('blood_group').options"
 							/>
+
+							<div class="flex flex-row items-center justify-between mt-2">
+								<span class="text-base font-semibold text-gray-800">{{ __("Education") }}</span>
+								<Button variant="outline" @click="addEducationRow">
+									<template #prefix>
+										<FeatherIcon name="plus" class="h-4 w-4" />
+									</template>
+									{{ __("Add") }}
+								</Button>
+							</div>
+
+							<div
+								v-for="(row, index) in form.education"
+								:key="index"
+								class="flex flex-col gap-3 border rounded p-3"
+							>
+								<div class="flex flex-row items-center justify-between">
+									<span class="text-sm font-medium text-gray-600">
+										{{ __("Education {0}", [index + 1]) }}
+									</span>
+									<Button variant="ghost" @click="removeEducationRow(index)">
+										<FeatherIcon name="trash-2" class="h-4 w-4 text-red-500" />
+									</Button>
+								</div>
+
+								<FormField
+									v-model="row.school_univ"
+									fieldname="school_univ"
+									fieldtype="Small Text"
+									:label="__('School/University')"
+									:addSectionPadding="false"
+								/>
+								<FormField
+									v-model="row.qualification"
+									fieldname="qualification"
+									fieldtype="Data"
+									:label="__('Qualification')"
+									:addSectionPadding="false"
+								/>
+								<FormField
+									v-model="row.level"
+									fieldname="level"
+									:fieldtype="getEducationFieldMeta('level').fieldtype"
+									:label="__('Level')"
+									:options="getEducationFieldMeta('level').options"
+									:addSectionPadding="false"
+								/>
+								<FormField
+									v-model="row.year_of_passing"
+									fieldname="year_of_passing"
+									fieldtype="Int"
+									:label="__('Year of Passing')"
+									:addSectionPadding="false"
+								/>
+							</div>
 
 							<Button
 								variant="solid"
@@ -129,6 +184,7 @@ const form = reactive({
 	emergency_phone_number: "",
 	marital_status: "",
 	blood_group: "",
+	education: [],
 })
 
 const employeeDoc = createDocumentResource({
@@ -146,12 +202,24 @@ const employeeDoc = createDocumentResource({
 		form.emergency_phone_number = doc.emergency_phone_number
 		form.marital_status = doc.marital_status
 		form.blood_group = doc.blood_group
+		form.education = (doc.education || []).map((row) => ({
+			school_univ: row.school_univ,
+			qualification: row.qualification,
+			level: row.level,
+			year_of_passing: row.year_of_passing,
+		}))
 	},
 })
 
 const employeeDocType = createResource({
 	url: "hrms.api.get_doctype_fields",
 	params: { doctype: "Employee" },
+	auto: true,
+})
+
+const educationDocType = createResource({
+	url: "hrms.api.get_doctype_fields",
+	params: { doctype: "Employee Education" },
 	auto: true,
 })
 
@@ -185,11 +253,28 @@ const submitRequest = createResource({
 	},
 })
 
-function getFieldOptions(fieldname) {
-	return employeeDocType.data?.find((field) => field.fieldname === fieldname)?.options || ""
+function getFieldMeta(fieldname) {
+	const field = employeeDocType.data?.find((field) => field.fieldname === fieldname)
+	return { fieldtype: field?.fieldtype || "Data", options: field?.options || "" }
+}
+
+function getEducationFieldMeta(fieldname) {
+	const field = educationDocType.data?.find((field) => field.fieldname === fieldname)
+	return { fieldtype: field?.fieldtype || "Data", options: field?.options || "" }
+}
+
+function addEducationRow() {
+	form.education.push({ school_univ: "", qualification: "", level: "", year_of_passing: "" })
+}
+
+function removeEducationRow(index) {
+	form.education.splice(index, 1)
 }
 
 function onSubmit() {
-	submitRequest.submit({ ...form })
+	submitRequest.submit({
+		...form,
+		education: form.education.filter((row) => row.school_univ),
+	})
 }
 </script>
