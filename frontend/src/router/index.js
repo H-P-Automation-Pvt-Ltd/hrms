@@ -63,6 +63,11 @@ const routes = [
 		component: () => import("@/views/Profile.vue"),
 	},
 	{
+		path: "/profile/update-request",
+		name: "RequestProfileUpdate",
+		component: () => import("@/views/RequestProfileUpdate.vue"),
+	},
+	{
 		path: "/notifications",
 		name: "Notifications",
 		component: () => import("@/views/Notifications.vue"),
