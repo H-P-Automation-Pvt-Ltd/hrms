@@ -82,11 +82,6 @@ const routes = [
 		name: "InvalidEmployee",
 		component: () => import("@/views/InvalidEmployee.vue"),
 	},
-	{
-		path: "/testing",
-		name: "Testing",
-		component: () => import("@/views/Testing.vue"),
-	},
 	...attendanceRoutes,
 	...leaveRoutes,
 	...claimRoutes,
