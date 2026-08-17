@@ -63,6 +63,11 @@ const routes = [
 		component: () => import("@/views/Profile.vue"),
 	},
 	{
+		path: "/profile/update-request",
+		name: "RequestProfileUpdate",
+		component: () => import("@/views/RequestProfileUpdate.vue"),
+	},
+	{
 		path: "/notifications",
 		name: "Notifications",
 		component: () => import("@/views/Notifications.vue"),
@@ -81,11 +86,6 @@ const routes = [
 		path: "/invalid-employee",
 		name: "InvalidEmployee",
 		component: () => import("@/views/InvalidEmployee.vue"),
-	},
-	{
-		path: "/testing",
-		name: "Testing",
-		component: () => import("@/views/Testing.vue"),
 	},
 	...attendanceRoutes,
 	...leaveRoutes,

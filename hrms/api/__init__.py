@@ -1,9 +1,11 @@
+import json
+
 import frappe
 from frappe import _
 from frappe.model import get_permitted_fields
 from frappe.model.workflow import get_workflow_name
 from frappe.query_builder import Order
-from frappe.utils import add_days, date_diff, getdate, strip_html
+from frappe.utils import add_days, date_diff, getdate, now_datetime, strip_html
 
 from erpnext.setup.doctype.employee.employee import get_holiday_list_for_employee
 
@@ -836,3 +838,85 @@ def get_allowed_states_for_workflow(workflow: dict, user_id: str) -> list[str]:
 @frappe.whitelist()
 def get_permitted_fields_for_write(doctype: str) -> list[str]:
 	return get_permitted_fields(doctype, permission_type="write")
+
+
+# Employee Details Update Request
+EMPLOYEE_DETAILS_UPDATE_FIELD_MAP = {
+	"new_first_name": "first_name",
+	"gender": "gender",
+	"date_of_birth": "date_of_birth",
+	"date_of_joining": "date_of_joining",
+	"cell_number": "cell_number",
+	"personal_email": "personal_email",
+	"current_address": "current_address",
+	"emergency_phone_number": "emergency_phone_number",
+	"marital_status": "marital_status",
+	"blood_group": "blood_group",
+}
+
+
+@frappe.whitelist()
+def submit_employee_details_update_request(**kwargs) -> dict:
+	employee_name = get_current_employee()
+
+	if frappe.db.exists(
+		"Employee Details Update Request",
+		{"employee": employee_name, "status": "Pending"},
+	):
+		frappe.throw(_("You already have a pending profile update request."))
+
+	emp_doc = frappe.get_doc("Employee", employee_name)
+
+	old_data = {}
+	new_data = {}
+
+	for request_key, employee_field in EMPLOYEE_DETAILS_UPDATE_FIELD_MAP.items():
+		new_value = kwargs.get(request_key)
+		if new_value in [None, ""]:
+			continue
+
+		old_value = emp_doc.get(employee_field)
+		if str(old_value or "") != str(new_value):
+			old_data[employee_field] = old_value or ""
+			new_data[employee_field] = new_value
+
+	education = kwargs.get("education", [])
+	if education:
+		old_education = frappe.get_all(
+			"Employee Education",
+			filters={"parent": employee_name},
+			fields=["school_univ", "qualification", "level", "year_of_passing"],
+			order_by="idx asc",
+		)
+		new_education = [row for row in education if row.get("school_univ")]
+
+		if old_education != new_education:
+			old_data["education"] = old_education
+			new_data["education"] = new_education
+
+	if not new_data:
+		frappe.throw(_("No changes found."))
+
+	request_doc = frappe.get_doc(
+		{
+			"doctype": "Employee Details Update Request",
+			"employee": employee_name,
+			"requested_on": now_datetime(),
+			"data": json.dumps({"old": old_data, "new": new_data}, default=str),
+		}
+	)
+	request_doc.insert()
+
+	return {"name": request_doc.name}
+
+
+@frappe.whitelist()
+def get_employee_details_update_requests() -> list[dict]:
+	employee_name = get_current_employee()
+
+	return frappe.get_all(
+		"Employee Details Update Request",
+		filters={"employee": employee_name},
+		fields=["name", "status", "requested_on", "data"],
+		order_by="requested_on desc",
+	)
