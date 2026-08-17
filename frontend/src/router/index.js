@@ -73,6 +73,11 @@ const routes = [
 		component: () => import("@/views/Notifications.vue"),
 	},
 	{
+		path: "/updates",
+		name: "Updates",
+		component: () => import("@/views/Updates.vue"),
+	},
+	{
 		path: "/settings",
 		name: "Settings",
 		component: () => import("@/views/AppSettings.vue"),
