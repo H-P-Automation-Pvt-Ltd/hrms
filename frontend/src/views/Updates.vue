@@ -18,7 +18,24 @@
 						</div>
 					</header>
 
-					<div class="flex flex-col gap-4 mt-5 p-4">
+					<!-- Tabs -->
+					<div class="flex flex-row bg-white border-b sticky top-[65px] z-10">
+						<button
+							v-for="tab in ['Posts', 'Events']"
+							:key="tab"
+							class="flex-1 py-3 text-base text-center border-b-2"
+							:class="
+								activeTab === tab
+									? 'font-semibold text-gray-900 border-blue-600'
+									: 'font-normal text-gray-500 border-transparent'
+							"
+							@click="activeTab = tab"
+						>
+							{{ __(tab) }}
+						</button>
+					</div>
+
+					<div v-if="activeTab === 'Posts'" class="flex flex-col gap-4 mt-5 p-4">
 						<!-- Actions -->
 						<div class="flex flex-row gap-3 bg-white rounded p-3">
 							<router-link
@@ -185,6 +202,10 @@
 							{{ __("Load more") }}
 						</Button>
 					</div>
+
+					<div v-else class="p-4">
+						<EmptyState :message="__('No events yet')" />
+					</div>
 				</div>
 			</div>
 		</ion-content>
@@ -195,18 +216,22 @@
 import { IonContent, IonPage } from "@ionic/vue"
 import { useRouter } from "vue-router"
 import { createResource, Dropdown, toast } from "frappe-ui"
-import { inject, reactive, ref } from "vue"
+import { inject, onMounted, reactive, ref } from "vue"
 
 import EmployeeAvatar from "@/components/EmployeeAvatar.vue"
 import { getEmployeeInfoByUserID } from "@/data/employees"
+import { useListUpdate } from "@/composables/realtime"
 
 const session = inject("$session")
+const socket = inject("$socket")
 const __ = inject("$translate")
 const dayjs = inject("$dayjs")
 const router = useRouter()
 
+const DOCTYPE = "ESS Post"
 const PAGE_LENGTH = 10
 
+const activeTab = ref("Posts")
 const posts = ref([])
 const start = ref(0)
 const hasMore = ref(true)
@@ -325,4 +350,11 @@ function submitComment(post) {
 }
 
 loadFeed()
+
+onMounted(() => {
+	useListUpdate(socket, DOCTYPE, () => {
+		start.value = 0
+		loadFeed()
+	})
+})
 </script>
