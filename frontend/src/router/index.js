@@ -78,6 +78,16 @@ const routes = [
 		component: () => import("@/views/Updates.vue"),
 	},
 	{
+		path: "/updates/create-post",
+		name: "CreatePost",
+		component: () => import("@/views/updates/CreatePost.vue"),
+	},
+	{
+		path: "/updates/create-poll",
+		name: "CreatePoll",
+		component: () => import("@/views/updates/CreatePoll.vue"),
+	},
+	{
 		path: "/settings",
 		name: "Settings",
 		component: () => import("@/views/AppSettings.vue"),

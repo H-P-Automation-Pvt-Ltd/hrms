@@ -19,23 +19,26 @@
 					</header>
 
 					<div class="flex flex-col gap-4 mt-5 p-4">
-						<!-- Composer -->
-						<div class="flex flex-col gap-2 bg-white rounded p-3">
-							<Input
-								type="textarea"
-								v-model="newPostContent"
-								:placeholder="__('Share an update with your team...')"
-								class="h-20"
-							/>
-							<Button
-								variant="solid"
-								class="ml-auto"
-								:disabled="!newPostContent.trim()"
-								:loading="createPost.loading"
-								@click="submitPost"
+						<!-- Actions -->
+						<div class="flex flex-row gap-3 bg-white rounded p-3">
+							<router-link
+								:to="{ name: 'CreatePost' }"
+								class="flex flex-row items-center justify-center gap-2 grow border rounded p-2.5 text-sm font-medium text-gray-700"
 							>
-								{{ __("Post") }}
-							</Button>
+								<span class="flex items-center justify-center h-7 w-7 rounded border">
+									<FeatherIcon name="plus" class="h-4 w-4" />
+								</span>
+								{{ __("Create Post") }}
+							</router-link>
+							<router-link
+								:to="{ name: 'CreatePoll' }"
+								class="flex flex-row items-center justify-center gap-2 grow border rounded p-2.5 text-sm font-medium text-gray-700"
+							>
+								<span class="flex items-center justify-center h-7 w-7 rounded border">
+									<FeatherIcon name="bar-chart-2" class="h-4 w-4" />
+								</span>
+								{{ __("Create Poll") }}
+							</router-link>
 						</div>
 
 						<EmptyState v-if="!posts.length && !feed.loading" :message="__('No updates yet')" />
@@ -47,60 +50,105 @@
 							class="flex flex-col gap-3 bg-white rounded p-3"
 						>
 							<div class="flex flex-row items-center justify-between">
-								<EmployeeAvatar :userID="post.user" :showLabel="true" size="md" />
-								<Button
+								<div class="flex flex-row items-center gap-2">
+									<EmployeeAvatar :userID="post.user" size="md" />
+									<div class="flex flex-col">
+										<span class="text-sm font-semibold text-gray-900">
+											{{ getEmployeeInfoByUserID(post.user)?.employee_name || post.user }}
+										</span>
+										<span class="text-xs text-gray-500">{{ dayjs(post.post_datetime).fromNow() }}</span>
+									</div>
+								</div>
+								<Dropdown
 									v-if="post.user === session.user"
-									variant="ghost"
-									@click="removePost(post.name)"
-								>
-									<FeatherIcon name="trash-2" class="h-4 w-4 text-gray-500" />
-								</Button>
+									:options="[
+										{
+											label: __('Delete'),
+											icon: 'trash-2',
+											onClick: () => removePost(post.name),
+										},
+									]"
+									:button="{ icon: 'more-vertical', variant: 'ghost' }"
+								/>
 							</div>
-
-							<div class="text-xs text-gray-500">{{ dayjs(post.post_datetime).fromNow() }}</div>
 
 							<div class="text-sm text-gray-800" v-html="post.post_content"></div>
 
+							<!-- Attachments -->
+							<div
+								v-if="post.ess_post_attachment?.length"
+								class="flex flex-row flex-wrap gap-2"
+							>
+								<img
+									v-for="attachment in post.ess_post_attachment.filter(
+										(a) => a.type_of_attchment !== 'Video'
+									)"
+									:key="attachment.name"
+									:src="attachment.post_attach"
+									class="h-40 w-full object-cover rounded"
+								/>
+								<video
+									v-for="attachment in post.ess_post_attachment.filter(
+										(a) => a.type_of_attchment === 'Video'
+									)"
+									:key="attachment.name"
+									:src="attachment.post_attach"
+									controls
+									class="h-40 w-full rounded"
+								/>
+							</div>
+
 							<!-- Poll -->
-							<div v-if="post.post_type === 'Poll'" class="flex flex-col gap-2">
+							<div v-if="post.post_type === 'Poll'" class="flex flex-col">
 								<div
 									v-for="option in post.ess_post_poll_options"
 									:key="option.option"
-									class="relative rounded border overflow-hidden cursor-pointer"
+									class="flex flex-row items-center justify-between gap-2 py-2.5 border-b last:border-b-0 cursor-pointer"
 									@click="vote(post, option.option)"
 								>
-									<div
-										class="absolute inset-y-0 left-0 bg-blue-50"
-										:style="{ width: (option.percentage || 0) + '%' }"
-									></div>
-									<div class="relative flex flex-row justify-between p-2 text-sm">
-										<span :class="post.my_vote === option.option ? 'font-semibold text-blue-600' : 'text-gray-800'">
+									<div class="flex flex-row items-center gap-2">
+										<span
+											class="flex items-center justify-center h-4 w-4 rounded-full border"
+											:class="post.my_vote === option.option ? 'border-blue-600' : 'border-gray-400'"
+										>
+											<span
+												v-if="post.my_vote === option.option"
+												class="h-2 w-2 rounded-full bg-blue-600"
+											></span>
+										</span>
+										<span
+											class="text-sm"
+											:class="post.my_vote === option.option ? 'font-semibold text-blue-600' : 'text-gray-800'"
+										>
 											{{ option.option }}
 										</span>
-										<span class="text-gray-500">{{ Math.round(option.percentage || 0) }}%</span>
 									</div>
+									<span class="text-sm text-gray-500">
+										{{ (option.percentage || 0).toFixed(2) }}%
+									</span>
 								</div>
-								<div class="text-xs text-gray-500">
-									{{ __("{0} votes", [post.total_votes || 0]) }}
+								<div class="text-xs text-gray-500 mt-1">
+									{{ __("{0} votes", [post.total_votes || 0]) }} ·
+									{{ pollDaysLeft(post) }}
 								</div>
 							</div>
 
 							<!-- Actions -->
-							<div class="flex flex-row items-center gap-5 border-t pt-2">
+							<div class="flex flex-row items-center gap-3 border-t pt-3">
 								<button
-									class="flex flex-row items-center gap-1.5 text-sm"
+									class="flex flex-row items-center gap-1.5 text-sm rounded-full bg-gray-100 px-4 py-1.5"
 									:class="post.liked_by_me ? 'text-red-500' : 'text-gray-600'"
 									@click="toggleLike(post)"
 								>
-									<FeatherIcon name="heart" class="h-4 w-4" />
-									{{ post.likes_count || 0 }}
+									<FeatherIcon name="thumbs-up" class="h-4 w-4" />
+									{{ __("{0} Likes", [post.likes_count || 0]) }}
 								</button>
 								<button
-									class="flex flex-row items-center gap-1.5 text-sm text-gray-600"
+									class="flex flex-row items-center gap-1.5 text-sm rounded-full bg-gray-100 px-4 py-1.5 text-gray-600"
 									@click="toggleComments(post)"
 								>
 									<FeatherIcon name="message-circle" class="h-4 w-4" />
-									{{ post.comments_count || 0 }}
+									{{ __("{0} Comments", [post.comments_count || 0]) }}
 								</button>
 							</div>
 
@@ -146,10 +194,11 @@
 <script setup>
 import { IonContent, IonPage } from "@ionic/vue"
 import { useRouter } from "vue-router"
-import { createResource, toast } from "frappe-ui"
+import { createResource, Dropdown, toast } from "frappe-ui"
 import { inject, reactive, ref } from "vue"
 
 import EmployeeAvatar from "@/components/EmployeeAvatar.vue"
+import { getEmployeeInfoByUserID } from "@/data/employees"
 
 const session = inject("$session")
 const __ = inject("$translate")
@@ -161,7 +210,6 @@ const PAGE_LENGTH = 10
 const posts = ref([])
 const start = ref(0)
 const hasMore = ref(true)
-const newPostContent = ref("")
 const expanded = reactive({})
 const comments = reactive({})
 const newComment = reactive({})
@@ -196,24 +244,11 @@ function loadMore() {
 	loadFeed()
 }
 
-const createPost = createResource({
-	url: "hrms.api.updates.create_or_update_post",
-	onSuccess() {
-		newPostContent.value = ""
-		start.value = 0
-		loadFeed()
-	},
-	onError(error) {
-		showError(error, __("Failed to post update"))
-	},
-})
-
-function submitPost() {
-	createPost.submit({
-		post_type: "Post",
-		post_content: `<p>${newPostContent.value.trim()}</p>`,
-		publish: 1,
-	})
+function pollDaysLeft(post) {
+	if (post.poll_closed) return __("Poll closed")
+	const daysLeft = dayjs(post.poll_end_date).diff(dayjs().startOf("day"), "day")
+	if (daysLeft <= 0) return __("Last day")
+	return __("{0} days left", [daysLeft])
 }
 
 function removePost(name) {
