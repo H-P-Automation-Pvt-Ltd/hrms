@@ -50,6 +50,9 @@ def _get_post(post_name: str) -> dict:
 			"answer",
 		)
 		post["total_votes"] = len(post.get("ess_post_poll_log") or [])
+		post["poll_closed"] = bool(
+			post.get("poll_end_date") and getdate(post["poll_end_date"]) < getdate()
+		)
 
 	if frappe.session.user != post.get("user"):
 		post.pop("ess_post_poll_log", None)
@@ -92,19 +95,18 @@ def toggle_post_like(post_id: str, like: bool = False) -> dict:
 
 @frappe.whitelist()
 def submit_poll_vote(post_id: str, answer: str) -> dict:
-	poll_end_date = frappe.db.get_value(DOCTYPE, post_id, "poll_end_date")
-	if poll_end_date and poll_end_date < getdate():
+	post_doc = frappe.get_doc(DOCTYPE, post_id)
+	if post_doc.poll_end_date and getdate(post_doc.poll_end_date) < getdate():
 		frappe.throw(_("Poll has ended"))
 
-	existing_vote = frappe.db.get_value(
-		"ESS Post Poll Log", {"user": frappe.session.user, "parent": post_id}, "name"
+	existing_vote = next(
+		(log for log in post_doc.ess_post_poll_log if log.user == frappe.session.user), None
 	)
-
-	post_doc = frappe.get_doc(DOCTYPE, post_id)
 	if existing_vote:
-		frappe.db.set_value("ESS Post Poll Log", existing_vote, "answer", answer)
+		existing_vote.answer = answer
 	else:
 		post_doc.append("ess_post_poll_log", {"user": frappe.session.user, "answer": answer})
+
 	post_doc.save(ignore_permissions=True)
 
 	return _get_post(post_id)
