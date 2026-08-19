@@ -30,12 +30,21 @@
 							<span class="text-sm text-blue-600">{{ __("Optional") }}</span>
 						</div>
 
-						<Input
-							type="select"
-							v-model="pollDuration"
-							:label="__('Poll duration*')"
-							:options="durationOptions"
-						/>
+						<div class="relative border rounded px-4 pt-3 pb-4">
+							<label class="text-sm text-gray-500">{{ __("Poll duration*") }}</label>
+							<select
+								v-model="pollDuration"
+								class="block w-full mt-1.5 bg-transparent border-none p-0 pr-8 text-lg font-medium text-gray-900 focus:outline-none focus:ring-0 appearance-none"
+							>
+								<option v-for="option in durationOptions" :key="option.value" :value="option.value">
+									{{ option.label }}
+								</option>
+							</select>
+							<FeatherIcon
+								name="chevron-down"
+								class="h-5 w-5 text-gray-500 absolute right-4 bottom-4 pointer-events-none"
+							/>
+						</div>
 					</div>
 
 					<div class="flex flex-row gap-3 p-4 sticky bottom-0 bg-white border-t">

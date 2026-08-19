@@ -37,22 +37,22 @@
 
 					<div v-if="activeTab === 'Posts'" class="flex flex-col gap-4 mt-5 p-4">
 						<!-- Actions -->
-						<div class="flex flex-row gap-3 bg-white rounded p-3">
+						<div class="flex flex-row gap-3 bg-white rounded p-3 shadow-sm">
 							<router-link
 								:to="{ name: 'CreatePost' }"
-								class="flex flex-row items-center justify-center gap-2 grow border rounded p-2.5 text-sm font-medium text-gray-700"
+								class="flex flex-row items-center justify-center gap-2 grow border border-blue-200 bg-blue-50 rounded-lg p-3 text-sm font-semibold text-blue-700 active:scale-95 transition"
 							>
-								<span class="flex items-center justify-center h-7 w-7 rounded border">
-									<FeatherIcon name="plus" class="h-4 w-4" />
+								<span class="flex items-center justify-center h-7 w-7 rounded-full bg-white border border-blue-200">
+									<FeatherIcon name="plus" class="h-4 w-4 text-blue-600" />
 								</span>
 								{{ __("Create Post") }}
 							</router-link>
 							<router-link
 								:to="{ name: 'CreatePoll' }"
-								class="flex flex-row items-center justify-center gap-2 grow border rounded p-2.5 text-sm font-medium text-gray-700"
+								class="flex flex-row items-center justify-center gap-2 grow border border-blue-200 bg-blue-50 rounded-lg p-3 text-sm font-semibold text-blue-700 active:scale-95 transition"
 							>
-								<span class="flex items-center justify-center h-7 w-7 rounded border">
-									<FeatherIcon name="bar-chart-2" class="h-4 w-4" />
+								<span class="flex items-center justify-center h-7 w-7 rounded-full bg-white border border-blue-200">
+									<FeatherIcon name="bar-chart-2" class="h-4 w-4 text-blue-600" />
 								</span>
 								{{ __("Create Poll") }}
 							</router-link>
@@ -76,17 +76,13 @@
 										<span class="text-xs text-gray-500">{{ dayjs(post.post_datetime).fromNow() }}</span>
 									</div>
 								</div>
-								<Dropdown
+								<button
 									v-if="post.user === session.user"
-									:options="[
-										{
-											label: __('Delete'),
-											icon: 'trash-2',
-											onClick: () => removePost(post.name),
-										},
-									]"
-									:button="{ icon: 'more-vertical', variant: 'ghost' }"
-								/>
+									class="flex items-center justify-center h-8 w-8 rounded-full text-gray-500 hover:bg-red-50 hover:text-red-600 transition"
+									@click="confirmDeletePost(post.name)"
+								>
+									<FeatherIcon name="trash-2" class="h-4 w-4" />
+								</button>
 							</div>
 
 							<div class="text-sm text-gray-800" v-html="post.post_content"></div>
@@ -116,11 +112,12 @@
 							</div>
 
 							<!-- Poll -->
-							<div v-if="post.post_type === 'Poll'" class="flex flex-col">
+							<div v-if="post.post_type === 'Poll'" class="flex flex-col" :class="{ 'opacity-60': post.poll_closed }">
 								<div
 									v-for="option in post.ess_post_poll_options"
 									:key="option.option"
-									class="flex flex-row items-center justify-between gap-2 py-2.5 border-b last:border-b-0 cursor-pointer"
+									class="flex flex-row items-center justify-between gap-2 py-2.5 border-b last:border-b-0"
+									:class="post.poll_closed ? 'cursor-not-allowed' : 'cursor-pointer'"
 									@click="vote(post, option.option)"
 								>
 									<div class="flex flex-row items-center gap-2">
@@ -144,24 +141,36 @@
 										{{ (option.percentage || 0).toFixed(2) }}%
 									</span>
 								</div>
-								<div class="text-xs text-gray-500 mt-1">
-									{{ __("{0} votes", [post.total_votes || 0]) }} ·
-									{{ pollDaysLeft(post) }}
+								<div class="flex flex-row items-center gap-2 text-xs text-gray-500 mt-1">
+									<span
+										v-if="post.poll_closed"
+										class="rounded-full bg-gray-200 text-gray-600 font-medium px-2 py-0.5"
+									>
+										{{ __("Closed") }}
+									</span>
+									<span>
+										{{ __("{0} votes", [post.total_votes || 0]) }} ·
+										{{ pollDaysLeft(post) }}
+									</span>
 								</div>
 							</div>
 
 							<!-- Actions -->
 							<div class="flex flex-row items-center gap-3 border-t pt-3">
 								<button
-									class="flex flex-row items-center gap-1.5 text-sm rounded-full bg-gray-100 px-4 py-1.5"
-									:class="post.liked_by_me ? 'text-red-500' : 'text-gray-600'"
+									class="flex flex-row items-center gap-1.5 text-sm font-medium rounded-full border px-4 py-1.5 transition"
+									:class="
+										post.liked_by_me
+											? 'text-red-600 bg-red-50 border-red-200'
+											: 'text-gray-700 bg-gray-100 border-gray-200 hover:bg-gray-200'
+									"
 									@click="toggleLike(post)"
 								>
 									<FeatherIcon name="thumbs-up" class="h-4 w-4" />
 									{{ __("{0} Likes", [post.likes_count || 0]) }}
 								</button>
 								<button
-									class="flex flex-row items-center gap-1.5 text-sm rounded-full bg-gray-100 px-4 py-1.5 text-gray-600"
+									class="flex flex-row items-center gap-1.5 text-sm font-medium rounded-full border border-gray-200 bg-gray-100 px-4 py-1.5 text-gray-700 hover:bg-gray-200 transition"
 									@click="toggleComments(post)"
 								>
 									<FeatherIcon name="message-circle" class="h-4 w-4" />
@@ -208,6 +217,32 @@
 					</div>
 				</div>
 			</div>
+
+			<Dialog v-model="showDeleteDialog">
+				<template #body-title>
+					<h2 class="text-lg font-bold">{{ __("Delete Post") }}</h2>
+				</template>
+				<template #body-content>
+					<p class="text-gray-700">
+						{{ __("Are you sure you want to delete this update? This cannot be undone.") }}
+					</p>
+				</template>
+				<template #actions>
+					<div class="flex flex-row gap-4">
+						<Button variant="outline" class="w-full py-5" @click="showDeleteDialog = false">
+							{{ __("Cancel") }}
+						</Button>
+						<Button
+							variant="solid"
+							theme="red"
+							class="w-full py-5"
+							@click="removePost(deleteTarget)"
+						>
+							{{ __("Delete") }}
+						</Button>
+					</div>
+				</template>
+			</Dialog>
 		</ion-content>
 	</ion-page>
 </template>
@@ -215,7 +250,7 @@
 <script setup>
 import { IonContent, IonPage } from "@ionic/vue"
 import { useRouter } from "vue-router"
-import { createResource, Dropdown, toast } from "frappe-ui"
+import { createResource, Dialog, toast } from "frappe-ui"
 import { inject, onMounted, reactive, ref } from "vue"
 
 import EmployeeAvatar from "@/components/EmployeeAvatar.vue"
@@ -238,6 +273,8 @@ const hasMore = ref(true)
 const expanded = reactive({})
 const comments = reactive({})
 const newComment = reactive({})
+const showDeleteDialog = ref(false)
+const deleteTarget = ref(null)
 
 function showError(error, fallback) {
 	toast({
@@ -276,11 +313,18 @@ function pollDaysLeft(post) {
 	return __("{0} days left", [daysLeft])
 }
 
+function confirmDeletePost(name) {
+	deleteTarget.value = name
+	showDeleteDialog.value = true
+}
+
 function removePost(name) {
 	createResource({
 		url: "hrms.api.updates.delete_post",
 		onSuccess() {
 			posts.value = posts.value.filter((post) => post.name !== name)
+			showDeleteDialog.value = false
+			deleteTarget.value = null
 		},
 		onError(error) {
 			showError(error, __("Failed to delete update"))
