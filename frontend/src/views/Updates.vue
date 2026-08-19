@@ -43,7 +43,7 @@
 								class="flex flex-row items-center justify-center gap-2 grow border border-blue-200 bg-blue-50 rounded-lg p-3 text-sm font-semibold text-blue-700 active:scale-95 transition"
 							>
 								<span class="flex items-center justify-center h-7 w-7 rounded-full bg-white border border-blue-200">
-									<FeatherIcon name="plus" class="h-4 w-4 text-blue-600" />
+									<FeatherIcon name="edit-3" class="h-4 w-4 text-blue-600" />
 								</span>
 								{{ __("Create Post") }}
 							</router-link>
