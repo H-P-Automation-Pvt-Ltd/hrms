@@ -164,7 +164,7 @@
 <script setup>
 import { IonContent, IonPage } from "@ionic/vue"
 import { useRouter } from "vue-router"
-import { createDocumentResource, createResource, toast } from "frappe-ui"
+import { createDocumentResource, createResource, FeatherIcon, toast } from "frappe-ui"
 import { inject, reactive, watch } from "vue"
 
 import FormField from "@/components/FormField.vue"

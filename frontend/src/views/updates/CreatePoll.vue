@@ -70,7 +70,7 @@
 <script setup>
 import { IonContent, IonPage } from "@ionic/vue"
 import { useRouter } from "vue-router"
-import { createResource, toast } from "frappe-ui"
+import { createResource, FeatherIcon, toast } from "frappe-ui"
 import { computed, inject, ref } from "vue"
 
 const __ = inject("$translate")
