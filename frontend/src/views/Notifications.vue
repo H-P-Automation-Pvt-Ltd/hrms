@@ -143,6 +143,9 @@ function markAsRead(name) {
 }
 
 function getItemRoute(item) {
+	if (item.reference_document_type === "ESS Post") {
+		return { name: "Updates" }
+	}
 	return {
 		name: `${item.reference_document_type.replace(/\s+/g, "")}DetailView`,
 		params: { id: item.reference_document_name },

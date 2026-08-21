@@ -1,7 +1,7 @@
 import json
 
 import frappe
-from frappe import _
+from frappe import _, bold
 from frappe.desk.form.utils import add_comment as _add_comment
 from frappe.desk.like import toggle_like
 from frappe.utils import getdate, now_datetime, pretty_date
@@ -23,10 +23,43 @@ def create_or_update_post(**data) -> dict:
 		post_doc.employee = get_current_employee()
 		post_doc.post_datetime = now_datetime()
 
+	was_published = post_doc.get("publish")
+
 	data.pop("name", None)
 	post_doc.update(data)
 	post_doc.save(ignore_permissions=True)
+
+	if not was_published and post_doc.publish:
+		frappe.enqueue(
+			notify_members_of_new_post,
+			post_name=post_doc.name,
+			from_user=frappe.session.user,
+		)
+
 	return {"name": post_doc.name}
+
+
+def notify_members_of_new_post(post_name: str, from_user: str) -> None:
+	"""Notify every other employee (via PWA Notification) that a new post/poll was published."""
+	post_type = frappe.db.get_value(DOCTYPE, post_name, "post_type")
+	from_user_name = frappe.db.get_value("User", from_user, "full_name") or from_user
+	action = "poll" if post_type == "Poll" else "post"
+	message = f"{bold(from_user_name)} created a new {action} in Updates"
+
+	to_users = frappe.get_all(
+		"Employee",
+		filters={"user_id": ["not in", ["", from_user]], "status": "Active"},
+		pluck="user_id",
+	)
+
+	for to_user in set(to_users):
+		notification = frappe.new_doc("PWA Notification")
+		notification.from_user = from_user
+		notification.to_user = to_user
+		notification.message = message
+		notification.reference_document_type = DOCTYPE
+		notification.reference_document_name = post_name
+		notification.insert(ignore_permissions=True)
 
 
 def _get_post(post_name: str) -> dict:
@@ -121,6 +154,16 @@ def add_comment(post_id: str, content: str) -> None:
 		content=content,
 		comment_email=frappe.session.user,
 		comment_by=comment_by,
+	)
+
+	# Comments are stored on the "Comment" doctype, not on the post itself, so
+	# saving them doesn't trigger the ESS Post's automatic notify_update() /
+	# "list_update" broadcast. Publish it manually so other clients already
+	# subscribed to ESS Post (via useListUpdate in Updates.vue) refresh live.
+	frappe.publish_realtime(
+		"list_update",
+		{"doctype": DOCTYPE, "name": post_id, "user": frappe.session.user},
+		after_commit=True,
 	)
 
 

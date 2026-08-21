@@ -94,7 +94,7 @@
 							>
 								<img
 									v-for="attachment in post.ess_post_attachment.filter(
-										(a) => a.type_of_attchment !== 'Video'
+										(a) => a.type_of_attchment === 'Image' || !a.type_of_attchment
 									)"
 									:key="attachment.name"
 									:src="attachment.post_attach"
@@ -109,6 +109,20 @@
 									controls
 									class="h-40 w-full rounded"
 								/>
+								<a
+									v-for="attachment in post.ess_post_attachment.filter(
+										(a) => a.type_of_attchment === 'Document'
+									)"
+									:key="attachment.name"
+									:href="attachment.post_attach"
+									target="_blank"
+									rel="noopener"
+									download
+									class="flex flex-row items-center gap-2 w-full border rounded p-2 text-sm text-blue-700 bg-blue-50 hover:bg-blue-100 transition"
+								>
+									<FeatherIcon name="file" class="h-4 w-4 shrink-0" />
+									<span class="truncate">{{ attachmentName(attachment.post_attach) }}</span>
+								</a>
 							</div>
 
 							<!-- Poll -->
@@ -306,6 +320,10 @@ function loadMore() {
 	loadFeed()
 }
 
+function attachmentName(fileUrl) {
+	return decodeURIComponent(fileUrl.split("/").pop())
+}
+
 function pollDaysLeft(post) {
 	if (post.poll_closed) return __("Poll closed")
 	const daysLeft = dayjs(post.poll_end_date).diff(dayjs().startOf("day"), "day")
@@ -396,9 +414,12 @@ function submitComment(post) {
 loadFeed()
 
 onMounted(() => {
-	useListUpdate(socket, DOCTYPE, () => {
+	useListUpdate(socket, DOCTYPE, (postName) => {
 		start.value = 0
 		loadFeed()
+		if (postName && expanded[postName]) {
+			refreshComments({ name: postName })
+		}
 	})
 })
 </script>

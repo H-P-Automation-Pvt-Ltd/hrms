@@ -21,7 +21,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Type of Attachment",
-   "options": "Image\nVideo"
+   "options": "Image\nVideo\nDocument"
   }
  ],
  "index_web_pages_for_search": 1,
