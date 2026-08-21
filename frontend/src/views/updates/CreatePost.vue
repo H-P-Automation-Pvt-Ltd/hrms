@@ -105,7 +105,7 @@
 <script setup>
 import { IonContent, IonPage } from "@ionic/vue"
 import { useRouter } from "vue-router"
-import { Avatar, createResource, toast } from "frappe-ui"
+import { Avatar, createResource, FeatherIcon, toast } from "frappe-ui"
 import { computed, inject, ref } from "vue"
 
 import { FileAttachment } from "@/composables"

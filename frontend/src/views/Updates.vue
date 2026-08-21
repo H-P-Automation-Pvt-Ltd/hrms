@@ -250,7 +250,7 @@
 <script setup>
 import { IonContent, IonPage } from "@ionic/vue"
 import { useRouter } from "vue-router"
-import { createResource, Dialog, toast } from "frappe-ui"
+import { createResource, Dialog, FeatherIcon, toast } from "frappe-ui"
 import { inject, onMounted, reactive, ref } from "vue"
 
 import EmployeeAvatar from "@/components/EmployeeAvatar.vue"
