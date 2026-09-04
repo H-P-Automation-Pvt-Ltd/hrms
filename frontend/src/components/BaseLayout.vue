@@ -11,6 +11,12 @@
 						</div>
 						<div class="flex flex-row items-center gap-3 ml-auto">
 							<router-link
+								:to="{ name: 'Updates' }"
+								class="flex flex-col items-center"
+							>
+								<FeatherIcon name="activity" class="h-6 w-6" />
+							</router-link>
+							<router-link
 								:to="{ name: 'Notifications' }"
 								v-slot="{ navigate }"
 								class="flex flex-col items-center"

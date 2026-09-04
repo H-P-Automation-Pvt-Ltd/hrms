@@ -1,0 +1,39 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-17 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "post_attach",
+  "type_of_attchment"
+ ],
+ "fields": [
+  {
+   "fieldname": "post_attach",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "label": "Post Attach"
+  },
+  {
+   "fieldname": "type_of_attchment",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type of Attachment",
+   "options": "Image\nVideo\nDocument"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-17 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HR",
+ "name": "ESS Post Attachment",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

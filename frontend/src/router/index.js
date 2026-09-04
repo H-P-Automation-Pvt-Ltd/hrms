@@ -63,9 +63,29 @@ const routes = [
 		component: () => import("@/views/Profile.vue"),
 	},
 	{
+		path: "/profile/update-request",
+		name: "RequestProfileUpdate",
+		component: () => import("@/views/RequestProfileUpdate.vue"),
+	},
+	{
 		path: "/notifications",
 		name: "Notifications",
 		component: () => import("@/views/Notifications.vue"),
+	},
+	{
+		path: "/updates",
+		name: "Updates",
+		component: () => import("@/views/Updates.vue"),
+	},
+	{
+		path: "/updates/create-post",
+		name: "CreatePost",
+		component: () => import("@/views/updates/CreatePost.vue"),
+	},
+	{
+		path: "/updates/create-poll",
+		name: "CreatePoll",
+		component: () => import("@/views/updates/CreatePoll.vue"),
 	},
 	{
 		path: "/settings",
