@@ -852,6 +852,11 @@ EMPLOYEE_DETAILS_UPDATE_FIELD_MAP = {
 	"emergency_phone_number": "emergency_phone_number",
 	"marital_status": "marital_status",
 	"blood_group": "blood_group",
+	"family_background": "family_background",
+	"custom_bike_insurance": "custom_bike_insurance",
+	"custom_bike_insurance_valid_upto": "custom_bike_insurance_valid_upto",
+	"custom_car_insurance": "custom_car_insurance",
+	"custom_car_insurance_valid_upto": "custom_car_insurance_valid_upto",
 }
 
 

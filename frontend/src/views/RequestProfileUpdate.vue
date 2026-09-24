@@ -108,6 +108,70 @@
 								:label="__('Blood Group')"
 								:options="getFieldMeta('blood_group').options"
 							/>
+							<FormField
+								v-model="form.family_background"
+								fieldname="family_background"
+								fieldtype="Small Text"
+								:readOnly="!isEditing"
+								:label="__('Family Background')"
+							/>
+
+							<span class="text-base font-semibold text-gray-800 mt-2">
+								{{ __("Insurance Details") }}
+							</span>
+
+							<div
+								v-for="insurance in insuranceFields"
+								:key="insurance.fileField"
+								class="flex flex-col gap-3 border rounded p-3"
+							>
+								<div class="flex flex-col gap-1.5">
+									<span class="block text-sm leading-4 text-gray-700">
+										{{ __(insurance.label) }}
+									</span>
+									<div class="flex flex-row items-center justify-between gap-2">
+										<a
+											v-if="form[insurance.fileField]"
+											:href="form[insurance.fileField]"
+											target="_blank"
+											class="flex flex-row items-center gap-2 min-w-0 text-sm text-gray-800 bg-gray-100 rounded px-2 py-1.5"
+										>
+											<FeatherIcon name="file" class="h-4 w-4 shrink-0 text-gray-500" />
+											<span class="truncate">{{ getFileName(form[insurance.fileField]) }}</span>
+										</a>
+										<span v-else class="text-sm text-gray-500">{{ __("No document uploaded") }}</span>
+
+										<template v-if="isEditing">
+											<input
+												:ref="(el) => (fileInputs[insurance.fileField] = el)"
+												type="file"
+												accept="image/*,.pdf,.doc,.docx"
+												class="hidden"
+												@change="(e) => onInsuranceFileSelect(e, insurance.fileField)"
+											/>
+											<Button
+												variant="outline"
+												class="shrink-0"
+												:loading="uploadingField === insurance.fileField"
+												@click="fileInputs[insurance.fileField]?.click()"
+											>
+												<template #prefix>
+													<FeatherIcon name="upload" class="h-4 w-4" />
+												</template>
+												{{ form[insurance.fileField] ? __("Replace") : __("Upload") }}
+											</Button>
+										</template>
+									</div>
+								</div>
+								<FormField
+									v-model="form[insurance.dateField]"
+									:fieldname="insurance.dateField"
+									fieldtype="Date"
+									:readOnly="!isEditing"
+									:label="__(insurance.dateLabel)"
+									:addSectionPadding="false"
+								/>
+							</div>
 
 							<div class="flex flex-row items-center justify-between mt-2">
 								<span class="text-base font-semibold text-gray-800">{{ __("Education") }}</span>
@@ -180,6 +244,7 @@
 									variant="solid"
 									class="w-full"
 									:loading="submitRequest.loading"
+									:disabled="!!uploadingField"
 									@click="onSubmit"
 								>
 									{{ __("Submit Request") }}
@@ -197,6 +262,7 @@
 import { IonContent, IonPage } from "@ionic/vue"
 import { useRouter } from "vue-router"
 import { createDocumentResource, createResource, FeatherIcon, toast } from "frappe-ui"
+import { FileAttachment } from "@/composables"
 import { inject, reactive, ref, watch } from "vue"
 
 import FormField from "@/components/FormField.vue"
@@ -216,8 +282,31 @@ const form = reactive({
 	emergency_phone_number: "",
 	marital_status: "",
 	blood_group: "",
+	family_background: "",
+	custom_bike_insurance: "",
+	custom_bike_insurance_valid_upto: "",
+	custom_car_insurance: "",
+	custom_car_insurance_valid_upto: "",
 	education: [],
 })
+
+const insuranceFields = [
+	{
+		label: "Bike Insurance",
+		fileField: "custom_bike_insurance",
+		dateLabel: "Bike Insurance Valid Upto",
+		dateField: "custom_bike_insurance_valid_upto",
+	},
+	{
+		label: "Car Insurance",
+		fileField: "custom_car_insurance",
+		dateLabel: "Car Insurance Valid Upto",
+		dateField: "custom_car_insurance_valid_upto",
+	},
+]
+
+const fileInputs = {}
+const uploadingField = ref(null)
 
 const isEditing = ref(false)
 
@@ -241,6 +330,11 @@ function fillForm(doc) {
 	form.emergency_phone_number = doc.emergency_phone_number
 	form.marital_status = doc.marital_status
 	form.blood_group = doc.blood_group
+	form.family_background = doc.family_background
+	form.custom_bike_insurance = doc.custom_bike_insurance
+	form.custom_bike_insurance_valid_upto = doc.custom_bike_insurance_valid_upto
+	form.custom_car_insurance = doc.custom_car_insurance
+	form.custom_car_insurance_valid_upto = doc.custom_car_insurance_valid_upto
 	form.education = (doc.education || []).map((row) => ({
 		school_univ: row.school_univ,
 		qualification: row.qualification,
@@ -320,6 +414,28 @@ function addEducationRow() {
 
 function removeEducationRow(index) {
 	form.education.splice(index, 1)
+}
+
+function getFileName(fileUrl) {
+	return decodeURIComponent(fileUrl.split("/").pop())
+}
+
+// The document is uploaded right away as a private file on the Employee; only its URL
+// goes into the update request and is set on the Employee once the request is approved.
+async function onInsuranceFileSelect(event, fieldname) {
+	const file = event.target.files?.[0]
+	event.target.value = ""
+	if (!file) return
+
+	uploadingField.value = fieldname
+	try {
+		const fileDoc = await new FileAttachment(file).upload("Employee", employee.data.name, "")
+		form[fieldname] = fileDoc.file_url
+	} catch {
+		// FileAttachment already shows an error toast
+	} finally {
+		uploadingField.value = null
+	}
 }
 
 function onSubmit() {
